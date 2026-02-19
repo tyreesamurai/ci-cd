@@ -1,0 +1,57 @@
+name: Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      service_path:
+        description: "Path on server"
+        required: true
+        type: string
+      image_tag:
+        description: "Tag to deploy, leave blank if latest works"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, home-server, deploy]
+
+    steps:
+      - name: Choose Tag
+        id: tag
+        run: |
+          if [-n "${{ inputs.image_tag }}" ]; then
+            echo "tag=${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=main" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update .env IMAGE_TAG
+        run: |
+          set -euo pipefail
+          ENV_FILE="${{ inputs.service_path }}/.env
+          TAG="${{ steps.tag.outputs.tag }}"
+
+          touch "$ENV_FILE"
+
+          if grep -q '^IMAGE_TAG=' "$ENV_FILE"; then
+            sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" "$ENV_FILE"
+          else
+            echo "IMAGE_TAG=$TAG" >> "ENV_FILE"
+          fi
+
+          echo "Updated IMAGE_TAG to $TAG in $ENV_FILE"
+          tail -n 5 "$ENV_FILE" || true
+
+      - name: Pull & Restart
+        run: |
+          set -euo pipefail
+          cd "${{ inputs.service_path }}"
+
+          podman compose pull
+          podman compose up -d --remove-orphans
+
+          echo "Currently running:"
+          podman ps
