@@ -35,12 +35,10 @@ jobs:
         uses: tailscale/github-action@v3
         with:
           authkey: ${{ secrets.TS_AUTHKEY }}
-          version: latest
-          tags: tag:ci
 
       - name: Deploy
         run: |
-          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
             set -euo pipefail
             ENV_FILE="${{ inputs.service_path }}/.env"
             TAG="${{ steps.tag.outputs.tag }}"
