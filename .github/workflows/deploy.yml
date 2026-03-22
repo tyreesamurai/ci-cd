@@ -40,7 +40,7 @@ jobs:
 
       - name: Deploy
         run: |
-          tailscale ssh --skip-remote-validation ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+          ssh ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
             set -euo pipefail
             ENV_FILE="${{ inputs.service_path }}/.env"
             TAG="${{ steps.tag.outputs.tag }}"
