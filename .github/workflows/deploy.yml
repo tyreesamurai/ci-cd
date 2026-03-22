@@ -36,6 +36,7 @@ jobs:
         with:
           authkey: ${{ secrets.TS_AUTHKEY }}
           version: latest
+          tags: tag:ci
 
       - name: Deploy
         uses: appleboy/ssh-action@v1
@@ -43,21 +44,23 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           script: |
-            set -euo pipefail
-            ENV_FILE="${{ inputs.service_path }}/.env"
-            TAG="${{ steps.tag.outputs.tag }}"
+            tailscale ssh --skip-remote-validation ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+              set -euo pipefail
+              ENV_FILE="${{ inputs.service_path }}/.env"
+              TAG="${{ steps.tag.outputs.tag }}"
 
-            touch "$ENV_FILE"
-            if grep -q '^IMAGE_TAG=' "$ENV_FILE"; then
-              sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" "$ENV_FILE"
-            else
-              echo "IMAGE_TAG=$TAG" >> "$ENV_FILE"
-            fi
-            echo "Updated IMAGE_TAG to $TAG in $ENV_FILE"
-            tail -n 5 "$ENV_FILE" || true
+              touch "$ENV_FILE"
+              if grep -q '^IMAGE_TAG=' "$ENV_FILE"; then
+                sed -i "s/^IMAGE_TAG=.*/IMAGE_TAG=$TAG/" "$ENV_FILE"
+              else
+                echo "IMAGE_TAG=$TAG" >> "$ENV_FILE"
+              fi
+              echo "Updated IMAGE_TAG to $TAG in $ENV_FILE"
+              tail -n 5 "$ENV_FILE" || true
 
-            cd "${{ inputs.service_path }}"
-            podman compose pull
-            podman compose up -d --remove-orphans
-            echo "Currently running:"
-            podman ps
+              cd "${{ inputs.service_path }}"
+              podman compose pull
+              podman compose up -d --remove-orphans
+              echo "Currently running:"
+              podman ps
+            EOF
