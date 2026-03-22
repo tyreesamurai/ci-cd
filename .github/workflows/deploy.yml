@@ -11,15 +11,11 @@ on:
         required: false
         type: string
     secrets:
-      TS_OAUTH_CLIENT_ID:
-        required: true
-      TS_OAUTH_SECRET:
+      TS_AUTHKEY:
         required: true
       DEPLOY_HOST:
         required: true
       DEPLOY_USER:
-        required: true
-      DEPLOY_SSH_KEY:
         required: true
 
 jobs:
@@ -35,19 +31,17 @@ jobs:
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Join Tailscale
+      - name: Tailscale
         uses: tailscale/github-action@v3
         with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
+          authkey: ${{ secrets.TS_AUTHKEY }}
+          version: latest
 
       - name: Deploy
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -euo pipefail
             ENV_FILE="${{ inputs.service_path }}/.env"
