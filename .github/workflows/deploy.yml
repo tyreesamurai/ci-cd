@@ -54,7 +54,7 @@ jobs:
 
             cd "${{ inputs.service_path }}"
             podman compose pull
-            podman compose up -d --remove-orphans
+            podman compose up -d --remove-orphans --force-recreate
             echo "Currently running:"
             podman ps
           EOF
